@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+
+{% block title %}{{ folder.name }} - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar p-3">
+            <div class="d-flex align-items-center mb-4">
+                <i class="fas fa-shield-alt text-primary me-2"></i>
+                <h5 class="mb-0">SecureVault</h5>
+            </div>
+            
+            <nav class="nav flex-column">
+                <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Tableau de bord
+                </a>
+                <a class="nav-link" href="{{ url_for('main.add_entry') }}">
+                    <i class="fas fa-plus me-2"></i>
+                    Nouvelle entrée
+                </a>
+                <a class="nav-link" href="{{ url_for('main.add_folder') }}">
+                    <i class="fas fa-folder-plus me-2"></i>
+                    Nouveau dossier
+                </a>
+                <a class="nav-link" href="{{ url_for('main.setup_2fa') }}">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Configuration 2FA
+                </a>
+                <a class="nav-link" href="{{ url_for('main.audit_log') }}">
+                    <i class="fas fa-history me-2"></i>
+                    Journal d'audit
+                </a>
+            </nav>
+            
+            <div class="mt-4">
+                <h6 class="text-muted">Actions rapides</h6>
+                <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="generatePassword()">
+                    <i class="fas fa-key me-1"></i>
+                    Générer mot de passe
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="breadcrumb-nav">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('main.dashboard') }}">
+                            <i class="fas fa-home"></i> Accueil
+                        </a>
+                    </li>
+                    {% for crumb in breadcrumb %}
+                        {% if loop.last %}
+                            <li class="breadcrumb-item active" aria-current="page">
+                                <i class="fas fa-folder"></i> {{ crumb.name }}
+                            </li>
+                        {% else %}
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('main.view_folder', folder_id=crumb.id) }}">
+                                    <i class="fas fa-folder"></i> {{ crumb.name }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </nav>
+            
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-white mb-1">
+                        <i class="fas fa-folder text-warning me-2"></i>
+                        {{ folder.name }}
+                    </h2>
+                    <p class="text-light mb-0">
+                        {{ subfolders|length }} dossier(s) • {{ entries|length }} entrée(s)
+                    </p>
+                </div>
+                <div>
+                    <div class="btn-group">
+                        <button class="btn btn-light" onclick="location.href='{{ url_for('main.add_entry') }}?folder_id={{ folder.id }}'">
+                            <i class="fas fa-plus me-1"></i> Nouvelle entrée
+                        </button>
+                        <button class="btn btn-outline-light" onclick="location.href='{{ url_for('main.add_folder') }}?parent_id={{ folder.id }}'">
+                            <i class="fas fa-folder-plus me-1"></i> Sous-dossier
+                        </button>
+                        <button class="btn btn-outline-light" onclick="editFolder({{ folder.id }})">
+                            <i class="fas fa-edit me-1"></i> Modifier
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteFolder({{ folder.id }})">
+                            <i class="fas fa-trash me-1"></i> Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Folder Actions -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-0">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-0" placeholder="Rechercher dans ce dossier..." id="searchInput">
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-light btn-sm active" id="gridView">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" id="listView">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div id="folderContent">
+                {% if subfolders or entries %}
+                    <!-- Subfolders -->
+                    {% if subfolders %}
+                        <div class="mb-4">
+                            <h5 class="text-white mb-3">
+                                <i class="fas fa-folder-open me-2"></i>
+                                Dossiers ({{ subfolders|length }})
+                            </h5>
+                            <div class="row" id="subfoldersGrid">
+                                {% for subfolder in subfolders %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="folder-card" onclick="location.href='{{ url_for('main.view_folder', folder_id=subfolder.id) }}'">
+                                            <div class="d-flex align-items-center">
+                                                <div class="folder-icon me-3">
+                                                    <i class="fas fa-folder"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">{{ subfolder.name }}</h6>
+                                                    <small class="text-muted">
+                                                        Créé le {{ subfolder.created_at.strftime('%d/%m/%Y') if subfolder.created_at }}
+                                                    </small>
+                                                </div>
+                                                <div class="actions">
+                                                    <button class="btn-action" onclick="event.stopPropagation(); editFolder({{ subfolder.id }})" title="Modifier">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn-action" onclick="event.stopPropagation(); deleteFolder({{ subfolder.id }})" title="Supprimer">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Entries -->
+                    {% if entries %}
+                        <div class="mb-4">
+                            <h5 class="text-white mb-3">
+                                <i class="fas fa-key me-2"></i>
+                                Entrées ({{ entries|length }})
+                            </h5>
+                            <div class="row" id="entriesGrid">
+                                {% for entry in entries %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="entry-card" onclick="viewEntry({{ entry.id }})">
+                                            <div class="d-flex align-items-center">
+                                                <div class="entry-icon me-3">
+                                                    {% if entry.entry_type == 'password' %}
+                                                        <i class="fas fa-key"></i>
+                                                    {% elif entry.entry_type == 'note' %}
+                                                        <i class="fas fa-sticky-note"></i>
+                                                    {% elif entry.entry_type == 'card' %}
+                                                        <i class="fas fa-credit-card"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-file-alt"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">{{ entry.title }}</h6>
+                                                    <small class="text-muted">
+                                                        {{ entry.entry_type|title }} • 
+                                                        {{ entry.updated_at.strftime('%d/%m/%Y') if entry.updated_at else entry.created_at.strftime('%d/%m/%Y') }}
+                                                    </small>
+                                                </div>
+                                                <div class="actions">
+                                                    <button class="btn-action" onclick="event.stopPropagation(); editEntry({{ entry.id }})" title="Modifier">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn-action" onclick="event.stopPropagation(); shareEntry({{ entry.id }})" title="Partager">
+                                                        <i class="fas fa-share-alt"></i>
+                                                    </button>
+                                                    <button class="btn-action" onclick="event.stopPropagation(); duplicateEntry({{ entry.id }})" title="Dupliquer">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                    <button class="btn-action" onclick="event.stopPropagation(); deleteEntry({{ entry.id }})" title="Supprimer">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <!-- Empty State -->
+                    <div class="empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <h4>Ce dossier est vide</h4>
+                        <p class="mb-4">Commencez par créer votre première entrée ou sous-dossier.</p>
+                        <div>
+                            <button class="btn btn-light me-2" onclick="location.href='{{ url_for('main.add_entry') }}?folder_id={{ folder.id }}'">
+                                <i class="fas fa-plus me-1"></i> Créer une entrée
+                            </button>
+                            <button class="btn btn-outline-light" onclick="location.href='{{ url_for('main.add_folder') }}?parent_id={{ folder.id }}'">
+                                <i class="fas fa-folder-plus me-1"></i> Créer un sous-dossier
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour visualiser une entrée -->
+<div class="modal fade" id="entryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="entryModalTitle">
+                    <i class="fas fa-key me-2"></i>
+                    Titre de l'entrée
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="entryModalBody">
+                <!-- Le contenu sera chargé dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" id="editEntryBtn">Modifier</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let currentView = 'grid';
+
+// Fonctions pour gérer les entrées
+function viewEntry(entryId) {
+    fetch(`/view-entry/${entryId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('entryModalTitle').innerHTML = 
+                    `<i class="fas fa-${getEntryIcon(data.type)} me-2"></i>${data.title}`;
+                
+                let content = '';
+                if (data.type === 'password') {
+                    content = `
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nom d'utilisateur</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" value="${data.data.username || ''}" readonly>
+                                    <button class="btn btn-outline-secondary" onclick="copyToClipboard('${data.data.username || ''}')">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mot de passe</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" value="${data.data.password || ''}" readonly id="passwordField">
+                                    <button class="btn btn-outline-secondary" onclick="togglePassword()">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="copyToClipboard('${data.data.password || ''}')">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">URL</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" value="${data.data.url || ''}" readonly>
+                                    ${data.data.url ? `<a href="${data.data.url}" target="_blank" class="btn btn-outline-secondary"><i class="fas fa-external-link-alt"></i></a>` : ''}
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" rows="3" readonly>${data.data.notes || ''}</textarea>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content = `
+                        <div class="mb-3">
+                            <label class="form-label">Contenu</label>
+                            <textarea class="form-control" rows="8" readonly>${data.data.content || ''}</textarea>
+                        </div>
+                    `;
+                }
+                
+                content += `
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-plus me-1"></i>
+                                Créé le ${formatDate(data.created_at)}
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-edit me-1"></i>
+                                Modifié le ${formatDate(data.updated_at)}
+                            </small>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('entryModalBody').innerHTML = content;
+                document.getElementById('editEntryBtn').onclick = () => editEntry(entryId);
+                
+                new bootstrap.Modal(document.getElementById('entryModal')).show();
+            } else {
+                alert('Erreur lors du chargement de l\'entrée');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du chargement de l\'entrée');
+        });
+}
+
+function editEntry(entryId) {
+    location.href = `/edit-entry/${entryId}`;
+}
+
+function shareEntry(entryId) {
+    location.href = `/share-entry/${entryId}`;
+}
+
+function duplicateEntry(entryId) {
+    if (confirm('Voulez-vous dupliquer cette entrée ?')) {
+        fetch(`/duplicate-entry/${entryId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la duplication');
+            }
+        });
+    }
+}
+
+function deleteEntry(entryId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette entrée ?')) {
+        fetch(`/delete-entry/${entryId}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression');
+            }
+        });
+    }
+}
+
+// Fonctions pour gérer les dossiers
+function editFolder(folderId) {
+    location.href = `/edit-folder/${folderId}`;
+}
+
+function deleteFolder(folderId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier ? Il doit être vide.')) {
+        fetch(`/delete-folder/${folderId}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                location.href = '{{ url_for("main.dashboard") }}';
+            } else {
+                alert('Erreur lors de la suppression. Le dossier doit être vide.');
+            }
+        });
+    }
+}
+
+// Fonctions utilitaires
+function getEntryIcon(type) {
+    switch(type) {
+        case 'password': return 'key';
+        case 'note': return 'sticky-note';
+        case 'card': return 'credit-card';
+        default: return 'file-alt';
+    }
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Afficher une notification
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed top-0 end-0 p-3';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <div class="toast show" role="alert">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    Copié dans le presse-papiers
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    });
+}
+
+function togglePassword() {
+    const field = document.getElementById('passwordField');
+    const icon = document.getElementById('toggleIcon');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        field.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+function generatePassword() {
+    window.open('/generate-password-api', '_blank');
+}
+
+// Recherche
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.folder-card, .entry-card');
+    
+    cards.forEach(card => {
+        const title = card.querySelector('h6').textContent.toLowerCase();
+        if (title.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+
+// Basculement de vue
+document.getElementById('gridView').addEventListener('click', function() {
+    currentView = 'grid';
+    this.classList.add('active');
+    document.getElementById('listView').classList.remove('active');
+    // Implémenter la vue grille
+});
+
+document.getElementById('listView').addEventListener('click', function() {
+    currentView = 'list';
+    this.classList.add('active');
+    document.getElementById('gridView').classList.remove('active');
+    // Implémenter la vue liste
+});
+</script>
+
+<style>
+.sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    min-height: 100vh;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.main-content {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    margin: 20px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.breadcrumb-nav {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.breadcrumb-item a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.breadcrumb-item.active {
+    color: #f8f9fa;
+}
+
+.folder-card, .entry-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.folder-card:hover, .entry-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.folder-icon {
+    color: #ffc107;
+    font-size: 2rem;
+}
+
+.entry-icon {
+    color: #6c757d;
+    font-size: 1.5rem;
+}
+
+.actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.folder-card:hover .actions,
+.entry-card:hover .actions {
+    opacity: 1;
+}
+
+.btn-action {
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin: 0 5px;
+    transition: color 0.3s ease;
+}
+
+.btn-action:hover {
+    color: #495057;
+}
+
+.empty-state {
+    text-align: center;
+    color: #fff;
+    padding: 60px 20px;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+</style>
+{% endblock %}

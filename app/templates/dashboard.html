@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header avec actions rapides -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-tachometer-alt"></i> Tableau de bord</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('main.add_entry') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nouvelle entrée
+                    </a>
+                    <a href="{{ url_for('main.add_folder') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-folder-plus"></i> Nouveau dossier
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">{{ stats.total_entries }}</h3>
+                            <p class="mb-0">Total des entrées</p>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-key fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">{{ stats.total_folders }}</h3>
+                            <p class="mb-0">Dossiers</p>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-folder fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">{{ stats.shared_entries }}</h3>
+                            <p class="mb-0">Entrées partagées</p>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-share-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card {% if current_user.is_2fa_enabled %}bg-success{% else %}bg-warning{% endif %} text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">Sécurité 2FA</h6>
+                            <p class="mb-0">{% if current_user.is_2fa_enabled %}Activée{% else %}Désactivée{% endif %}</p>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-shield-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Mes dossiers -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-folder"></i> Mes dossiers</h5>
+                    <a href="{{ url_for('main.add_folder') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if folders %}
+                        <div class="list-group list-group-flush">
+                            {% for folder in folders %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-folder text-warning me-2"></i>
+                                    <a href="{{ url_for('main.view_folder', folder_id=folder.id) }}" class="text-decoration-none">
+                                        {{ folder.name }}
+                                    </a>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('main.edit_folder', folder_id=folder.id) }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" onclick="deleteFolder({{ folder.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-folder-open fa-3x mb-3"></i>
+                            <p>Aucun dossier créé</p>
+                            <a href="{{ url_for('main.add_folder') }}" class="btn btn-primary">
+                                Créer mon premier dossier
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Mes entrées récentes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-key"></i> Mes entrées</h5>
+                    <a href="{{ url_for('main.add_entry') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if entries %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Titre</th>
+                                        <th>Type</th>
+                                        <th>Dossier</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in entries %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-{% if entry.entry_type == 'password' %}key{% else %}file-text{% endif %} me-2"></i>
+                                            {{ entry.title }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if entry.entry_type == 'password' %}primary{% else %}secondary{% endif %}">
+                                                {{ entry.entry_type }}
+                                            </span>
+                                        </td>
+                                        <td>{{ entry.folder.name if entry.folder else 'Aucun dossier' }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-info" onclick="viewEntry({{ entry.id }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <a href="{{ url_for('main.edit_entry', entry_id=entry.id) }}" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button class="btn btn-outline-danger" onclick="deleteEntry({{ entry.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-key fa-3x mb-3"></i>
+                            <p>Aucune entrée créée</p>
+                            <a href="{{ url_for('main.add_entry') }}" class="btn btn-primary">
+                                Créer ma première entrée
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entrées partagées et activité récente -->
+    <div class="row">
+        {% if shared_entries %}
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-share-alt"></i> Entrées partagées avec moi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for entry in shared_entries[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-key text-primary me-2"></i>
+                                {{ entry.title }}
+                                <small class="text-muted d-block">Partagé par un autre utilisateur</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-info" onclick="viewEntry({{ entry.id }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="col-lg-{% if shared_entries %}6{% else %}12{% endif %} mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-history"></i> Activité récente</h5>
+                    <a href="{{ url_for('main.audit_log') }}" class="btn btn-sm btn-outline-secondary">
+                        Voir tout
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if stats.recent_activity %}
+                        <div class="timeline">
+                            {% for activity in stats.recent_activity %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <span class="badge bg-{% if 'LOGIN' in activity.action %}success{% elif 'DELETE' in activity.action %}danger{% elif 'CREATE' in activity.action %}primary{% else %}info{% endif %}">
+                                        {{ activity.action }}
+                                    </span>
+                                    <small class="text-muted d-block">
+                                        {{ activity.timestamp.strftime('%d/%m/%Y à %H:%M') }}
+                                    </small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-history fa-3x mb-3"></i>
+                            <p>Aucune activité récente</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour visualiser une entrée -->
+<div class="modal fade" id="viewEntryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de l'entrée</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="entryDetails">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    border-radius: 10px;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    opacity: 0.7;
+}
+
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-left: 25px;
+    position: relative;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    background: #6c5ce7;
+    border-radius: 50%;
+}
+
+.timeline-item:before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 10px;
+    bottom: -15px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item:last-child:before {
+    display: none;
+}
+</style>
+
+<script>
+// Fonction pour voir une entrée
+function viewEntry(entryId) {
+    fetch(`/view-entry/${entryId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let content = `<h6>${data.title}</h6>`;
+                content += `<p><strong>Type:</strong> ${data.type}</p>`;
+                
+                if (data.type === 'password') {
+                    content += `<p><strong>Nom d'utilisateur:</strong> ${data.data.username || 'N/A'}</p>`;
+                    content += `<p><strong>Mot de passe:</strong> <span class="password-hidden">••••••••</span>
+                                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="togglePassword(this, '${data.data.password}')">
+                                    <i class="fas fa-eye"></i>
+                                </button></p>`;
+                    if (data.data.url) {
+                        content += `<p><strong>URL:</strong> <a href="${data.data.url}" target="_blank">${data.data.url}</a></p>`;
+                    }
+                    if (data.data.notes) {
+                        content += `<p><strong>Notes:</strong> ${data.data.notes}</p>`;
+                    }
+                } else {
+                    content += `<p><strong>Contenu:</strong> ${data.data.content}</p>`;
+                }
+                
+                document.getElementById('entryDetails').innerHTML = content;
+                new bootstrap.Modal(document.getElementById('viewEntryModal')).show();
+            } else {
+                alert('Erreur lors du chargement de l\'entrée');
+            }
+        });
+}
+
+// Fonction pour basculer l'affichage du mot de passe
+function togglePassword(button, password) {
+    const passwordSpan = button.previousElementSibling;
+    const icon = button.querySelector('i');
+    
+    if (passwordSpan.classList.contains('password-hidden')) {
+        passwordSpan.textContent = password;
+        passwordSpan.classList.remove('password-hidden');
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passwordSpan.textContent = '••••••••';
+        passwordSpan.classList.add('password-hidden');
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// Fonction pour supprimer une entrée
+function deleteEntry(entryId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette entrée ?')) {
+        fetch(`/delete-entry/${entryId}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        }).then(() => location.reload());
+    }
+}
+
+// Fonction pour supprimer un dossier
+function deleteFolder(folderId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier ?')) {
+        fetch(`/delete-folder/${folderId}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        }).then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}

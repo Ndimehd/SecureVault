@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration 2FA - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> Configuration de l'authentification à deux facteurs (2FA)
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Sécurité renforcée :</strong> L'authentification à deux facteurs ajoute une couche 
+                        de sécurité supplémentaire à votre compte en demandant un code temporaire depuis votre téléphone.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-qrcode"></i> 1. Scannez le QR Code</h5>
+                            <p>Utilisez une application d'authentification comme Google Authenticator, Authy, ou Microsoft Authenticator pour scanner ce QR code :</p>
+                            
+                            <div class="text-center mb-3">
+                                <div class="border p-3 d-inline-block bg-white">
+                                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code 2FA" class="img-fluid">
+                                </div>
+                            </div>
+
+                            <div class="alert alert-secondary">
+                                <strong>Clé manuelle :</strong><br>
+                                <code>{{ secret }}</code><br>
+                                <small class="text-muted">Si vous ne pouvez pas scanner le QR code, entrez cette clé manuellement dans votre application.</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-mobile-alt"></i> 2. Vérifiez votre configuration</h5>
+                            <p>Une fois le QR code scanné, entrez le code à 6 chiffres généré par votre application :</p>
+
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="mb-3">
+                                    {{ form.otp_code.label(class="form-label") }}
+                                    {{ form.otp_code(class="form-control text-center", 
+                                                    style="font-size: 1.2em; letter-spacing: 0.2em;", 
+                                                    placeholder="000000", 
+                                                    maxlength="6",
+                                                    pattern="[0-9]{6}") }}
+                                    {% if form.otp_code.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.otp_code.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Le code change toutes les 30 secondes. Assurez-vous d'entrer le code actuel.
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-check-circle"></i> Activer la 2FA
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h5><i class="fas fa-exclamation-triangle text-warning"></i> Informations importantes</h5>
+                            <div class="alert alert-warning">
+                                <ul class="mb-0">
+                                    <li><strong>Sauvegardez vos codes de récupération :</strong> Une fois la 2FA activée, assurez-vous de sauvegarder vos codes de récupération dans un endroit sûr.</li>
+                                    <li><strong>Synchronisation de l'heure :</strong> Assurez-vous que l'heure de votre téléphone est correcte pour que les codes fonctionnent.</li>
+                                    <li><strong>Applications compatibles :</strong> Google Authenticator, Authy, Microsoft Authenticator, 1Password, etc.</li>
+                                    <li><strong>Plusieurs appareils :</strong> Vous pouvez ajouter le même compte sur plusieurs appareils pour plus de sécurité.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6><i class="fas fa-mobile-alt"></i> Applications recommandées</h6>
+                            <div class="row text-center">
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <i class="fab fa-google fa-2x text-primary mb-2"></i>
+                                            <h6 class="card-title">Google Authenticator</h6>
+                                            <small class="text-muted">Gratuit</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                                            <h6 class="card-title">Authy</h6>
+                                            <small class="text-muted">Gratuit</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <i class="fab fa-microsoft fa-2x text-info mb-2"></i>
+                                            <h6 class="card-title">Microsoft Authenticator</h6>
+                                            <small class="text-muted">Gratuit</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <i class="fas fa-key fa-2x text-warning mb-2"></i>
+                                            <h6 class="card-title">1Password</h6>
+                                            <small class="text-muted">Payant</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-format du code OTP
+document.getElementById('otp_code').addEventListener('input', function(e) {
+    // Supprimer tous les caractères non-numériques
+    this.value = this.value.replace(/\D/g, '');
+    
+    // Limiter à 6 chiffres
+    if (this.value.length > 6) {
+        this.value = this.value.slice(0, 6);
+    }
+});
+
+// Focus automatique sur le champ OTP
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('otp_code').focus();
+});
+</script>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+#otp_code {
+    font-family: 'Courier New', monospace;
+}
+
+.border {
+    border-radius: 8px;
+}
+</style>
+{% endblock %}

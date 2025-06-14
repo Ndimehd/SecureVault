@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Codes de sauvegarde - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Codes de sauvegarde 2FA
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important :</strong> Sauvegardez ces codes dans un endroit sûr. 
+                        Chaque code ne peut être utilisé qu'une seule fois.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Vos codes de sauvegarde :</h5>
+                            <div class="backup-codes-container p-3 bg-light rounded">
+                                {% for code in codes %}
+                                <div class="backup-code mb-2">
+                                    <code class="fs-5">{{ code[:4] }}-{{ code[4:] }}</code>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Instructions :</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Imprimez ou écrivez ces codes
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Conservez-les dans un lieu sûr
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Utilisez-les si vous perdez votre téléphone
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                    Chaque code n'est utilisable qu'une fois
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>Comment utiliser ces codes :</h5>
+                        <ol>
+                            <li>Lors de la connexion, si vous n'avez pas accès à votre application d'authentification</li>
+                            <li>Cliquez sur "Utiliser un code de sauvegarde" sur la page de connexion</li>
+                            <li>Entrez l'un de ces codes à la place du code OTP</li>
+                            <li>Le code sera automatiquement supprimé après utilisation</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="mt-4 d-flex justify-content-between">
+                        <button class="btn btn-outline-primary" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i>
+                            Imprimer
+                        </button>
+                        
+                        <button class="btn btn-outline-secondary" onclick="copyAllCodes()">
+                            <i class="fas fa-copy me-2"></i>
+                            Copier tous les codes
+                        </button>
+                        
+                        <a href="{{ url_for('main.security_settings') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Retour aux paramètres
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.backup-codes-container {
+    font-family: 'Courier New', monospace;
+    border: 2px dashed #dee2e6;
+}
+
+.backup-code {
+    padding: 8px;
+    border-radius: 4px;
+    background: white;
+    border: 1px solid #dee2e6;
+}
+
+@media print {
+    .btn, .alert {
+        display: none !important;
+    }
+    
+    .backup-codes-container {
+        border: 2px solid #000;
+    }
+}
+</style>
+
+<script>
+function copyAllCodes() {
+    const codes = [
+        {% for code in codes %}
+        "{{ code[:4] }}-{{ code[4:] }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const text = codes.join('\n');
+    navigator.clipboard.writeText(text).then(function() {
+        // Créer une notification temporaire
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        alert.style.top = '20px';
+        alert.style.right = '20px';
+        alert.style.zIndex = '9999';
+        alert.innerHTML = `
+            <i class="fas fa-check me-2"></i>
+            Codes copiés dans le presse-papiers !
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        
+        // Supprimer l'alerte après 3 secondes
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        }, 3000);
+    }).catch(function(err) {
+        console.error('Erreur lors de la copie: ', err);
+    });
+}
+</script>
+{% endblock %}

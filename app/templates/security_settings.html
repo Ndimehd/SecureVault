@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Paramètres de sécurité - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shield-alt"></i> Navigation</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Tableau de bord
+                    </a>
+                    <a href="{{ url_for('main.profile') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user"></i> Profil
+                    </a>
+                    <a href="{{ url_for('main.security_settings') }}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-shield-alt"></i> Sécurité
+                    </a>
+                    <a href="{{ url_for('main.audit_log') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-history"></i> Journal d'audit
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <!-- Authentification à deux facteurs -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-mobile-alt"></i> Authentification à deux facteurs (2FA)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6>Protection supplémentaire de votre compte</h6>
+                            <p class="text-muted">
+                                L'authentification à deux facteurs ajoute une couche de sécurité supplémentaire 
+                                en demandant un code de votre téléphone en plus de votre mot de passe.
+                            </p>
+                            <p>
+                                <strong>Statut :</strong> 
+                                {% if current_user.is_2fa_enabled %}
+                                    <span class="badge bg-success">Activée</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Désactivée</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if current_user.is_2fa_enabled %}
+                                <form method="POST" action="{{ url_for('main.disable_2fa') }}" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Êtes-vous sûr de vouloir désactiver la 2FA ?')">
+                                        <i class="fas fa-times"></i> Désactiver
+                                    </button>
+                                </form>
+                                <a href="{{ url_for('main.backup_codes') }}" class="btn btn-outline-primary ms-2">
+                                    <i class="fas fa-key"></i> Codes de sauvegarde
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('main.setup_2fa') }}" class="btn btn-success">
+                                    <i class="fas fa-plus"></i> Activer la 2FA
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mot de passe maître -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-key"></i> Mot de passe maître</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6>Chiffrement de vos données</h6>
+                            <p class="text-muted">
+                                Votre mot de passe maître est utilisé pour chiffrer toutes vos données. 
+                                Il n'est jamais stocké sur nos serveurs et est nécessaire pour accéder à vos informations.
+                            </p>
+                            <p class="text-warning">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                <strong>Attention :</strong> Changer le mot de passe maître re-chiffrera toutes vos données.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{{ url_for('main.change_master_password') }}" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Changer le mot de passe maître
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verrouillage automatique -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Verrouillage automatique</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6>Protection par inactivité</h6>
+                            <p class="text-muted">
+                                Votre coffre-fort se verrouille automatiquement après une période d'inactivité 
+                                pour protéger vos données.
+                            </p>
+                            <p><strong>Délai actuel :</strong> 30 minutes</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-outline-primary" onclick="lockVault()">
+                                <i class="fas fa-lock"></i> Verrouiller maintenant
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions actives -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-desktop"></i> Sessions actives</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6>Session actuelle</h6>
+                            <p class="text-muted">
+                                <strong>Adresse IP :</strong> {{ request.remote_addr }}<br>
+                                <strong>Navigateur :</strong> {{ request.user_agent.browser }} {{ request.user_agent.version }}<br>
+                                <strong>Système :</strong> {{ request.user_agent.platform }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge bg-success">Session actuelle</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique de sécurité -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Historique de sécurité</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6>Activités de sécurité récentes</h6>
+                            <p class="text-muted">
+                                Consultez l'historique complet de toutes les actions effectuées sur votre compte.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{{ url_for('main.audit_log') }}" class="btn btn-outline-info">
+                                <i class="fas fa-eye"></i> Voir l'historique
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export et sauvegarde -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-download"></i> Export et sauvegarde</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6>Sauvegarde de vos données</h6>
+                            <p class="text-muted">
+                                Exportez toutes vos données dans un fichier JSON sécurisé. 
+                                Les données exportées sont déchiffrées et ne doivent être stockées que dans un endroit sûr.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-info" onclick="exportData()">
+                                <i class="fas fa-download"></i> Exporter les données
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zone de danger -->
+            <div class="card border-danger mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Zone de danger</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="text-danger">Supprimer le compte</h6>
+                            <p class="text-muted">
+                                Cette action est irréversible. Toutes vos données seront définitivement supprimées.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-danger" onclick="confirmDeleteAccount()">
+                                <i class="fas fa-trash"></i> Supprimer le compte
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Supprimer le compte</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention !</strong> Cette action est irréversible.
+                </div>
+                <p>Êtes-vous absolument sûr de vouloir supprimer votre compte ?</p>
+                <p>Toutes vos données seront définitivement supprimées :</p>
+                <ul>
+                    <li>Toutes vos entrées et mots de passe</li>
+                    <li>Tous vos dossiers</li>
+                    <li>Tous les partages</li>
+                    <li>L'historique de vos activités</li>
+                </ul>
+                <div class="form-group mt-3">
+                    <label for="confirmDelete">Tapez "SUPPRIMER" pour confirmer :</label>
+                    <input type="text" class="form-control" id="confirmDelete" placeholder="SUPPRIMER">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                    Supprimer définitivement
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = document.getElementById('deleteAccountModal');
+    const confirmInput = document.getElementById('confirmDelete');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+    // Enable delete button only when "SUPPRIMER" is typed
+    confirmInput.addEventListener('input', function() {
+        confirmBtn.disabled = this.value !== 'SUPPRIMER';
+    });
+
+    // Handle delete confirmation
+    confirmBtn.addEventListener('click', function() {
+        // Here you would implement the actual delete account functionality
+        alert('Fonctionnalité de suppression de compte à implémenter');
+        bootstrap.Modal.getInstance(deleteModal).hide();
+    });
+});
+
+function lockVault() {
+    if (confirm('Êtes-vous sûr de vouloir verrouiller le coffre-fort ?')) {
+        window.location.href = "{{ url_for('main.lock_vault') }}";
+    }
+}
+
+function exportData() {
+    fetch('{{ url_for("main.export_data") }}')
+        .then(response => response.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `securevault_export_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showAlert('Données exportées avec succès', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Erreur lors de l\'export', 'danger');
+        });
+}
+
+function confirmDeleteAccount() {
+    const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
+    modal.show();
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Check session timeout periodically
+setInterval(function() {
+    fetch('{{ url_for("main.session_timeout") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.expired) {
+                showAlert('Session expirée par inactivité', 'warning');
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('main.master_password') }}";
+                }, 2000);
+            }
+        })
+        .catch(error => console.error('Session check error:', error));
+}, 60000); // Check every minute
+</script>
+{% endblock %}

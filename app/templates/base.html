@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecureVault{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(45deg, #667eea, #764ba2);
+        }
+        
+        body {
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .btn-primary {
+            background: var(--secondary-gradient);
+            border: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .navbar {
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .entry-card {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .entry-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .password-field {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .folder-icon {
+            color: #ffc107;
+            font-size: 1.2em;
+        }
+        
+        .entry-type-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+        
+        .entry-type-password {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+        
+        .entry-type-note {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+        
+        .entry-type-card {
+            background: linear-gradient(135deg, #45b7d1, #2980b9);
+            color: white;
+        }
+        
+        .strength-meter {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .strength-weak { background: #dc3545; }
+        .strength-medium { background: #ffc107; }
+        .strength-strong { background: #28a745; }
+        .strength-very-strong { background: #17a2b8; }
+        
+        .search-container {
+            position: relative;
+            max-width: 400px;
+        }
+        
+        .search-container .form-control {
+            border-radius: 25px;
+            padding-left: 40px;
+            border: 2px solid transparent;
+            background: rgba(255,255,255,0.9);
+        }
+        
+        .search-container .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .search-container .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        
+        .activity-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1060;
+        }
+        
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+        
+        .modal-header {
+            background: var(--secondary-gradient);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .dropdown-menu {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .nav-link {
+            border-radius: 20px;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .stats-card {
+            border-radius: 12px;
+            border: none;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .breadcrumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        
+        .breadcrumb-item a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item a:hover {
+            color: #764ba2;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .btn-outline-primary {
+            border-color: #667eea;
+            color: #667eea;
+            border-radius: 20px;
+        }
+        
+        .btn-outline-primary:hover {
+            background: #667eea;
+            border-color: #667eea;
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: #f8f9fa;
+            border: none;
+            font-weight: 600;
+        }
+        
+        .badge {
+            border-radius: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .navbar-nav {
+                background: rgba(255,255,255,0.95);
+                border-radius: 10px;
+                margin-top: 10px;
+                padding: 10px;
+            }
+            
+            .search-container {
+                max-width: 100%;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Indicateur d'activité -->
+    <div class="activity-indicator" id="activityIndicator" style="display: none;">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+
+    <!-- Container pour les toasts -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    {% if current_user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+                <i class="fas fa-shield-alt text-primary"></i> SecureVault
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Barre de recherche -->
+                <div class="search-container mx-auto">
+                    <form action="{{ url_for('main.search') }}" method="GET" class="d-flex">
+                        <div class="position-relative w-100">
+                            <i class="fas fa-search search-icon"></i>
+                            <input class="form-control" type="search" name="q" placeholder="Rechercher dans le coffre-fort..." 
+                                   value="{{ request.args.get('q', '') }}">
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="{{ url_for('main.dashboard') }}" title="Tableau de bord">
+                        <i class="fas fa-home"></i> <span class="d-lg-none">Tableau de bord</span>
+                    </a>
+                    
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-plus"></i> <span class="d-lg-none">Nouveau</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('main.add_entry') }}">
+                                <i class="fas fa-key"></i> Nouvelle entrée
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.add_folder') }}">
+                                <i class="fas fa-folder-plus"></i> Nouveau dossier
+                            </a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i> <span class="d-lg-none">Paramètres</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">
+                                <i class="fas fa-user"></i> Profil
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.security_settings') }}">
+                                <i class="fas fa-shield-alt"></i> Sécurité
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.setup_2fa') }}">
+                                <i class="fas fa-mobile-alt"></i> Authentification 2FA
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.audit_log') }}">
+                                <i class="fas fa-history"></i> Journal d'audit
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportData()">
+                                <i class="fas fa-download"></i> Exporter les données
+                            </a></li>
+                        </ul>
+                    </div>
+                    
+                    <a class="nav-link" href="#" onclick="lockVault()" title="Verrouiller le coffre">
+                        <i class="fas fa-lock"></i> <span class="d-lg-none">Verrouiller</span>
+                    </a>
+                    
+                    <a class="nav-link" href="{{ url_for('main.logout') }}" title="Déconnexion">
+                        <i class="fas fa-sign-out-alt"></i> <span class="d-lg-none">Déconnexion</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category=='error' else category }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{{ 'exclamation-triangle' if category=='error' else 'info-circle' if category=='info' else 'check-circle' }}"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Modal pour afficher les entrées -->
+    <div class="modal fade" id="entryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="entryModalTitle">Détails de l'entrée</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="entryModalBody">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmation -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="confirmModalBody">
+                    Êtes-vous sûr de vouloir effectuer cette action ?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger" id="confirmBtn">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let sessionCheckInterval;
+        let lastActivity = Date.now();
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-dismiss alerts
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+
+            // Démarrer la vérification de session
+            if ({{ 'true' if current_user.is_authenticated else 'false' }}) {
+                startSessionCheck();
+            }
+
+            // Écouter les activités utilisateur
+            document.addEventListener('click', updateActivity);
+            document.addEventListener('keypress', updateActivity);
+            document.addEventListener('mousemove', updateActivity);
+        });
+
+        // Gestion de l'activité utilisateur
+        function updateActivity() {
+            lastActivity = Date.now();
+        }
+
+        // Vérification de session
+        function startSessionCheck() {
+            sessionCheckInterval = setInterval(checkSession, 60000); // Vérifier chaque minute
+        }
+
+        function checkSession() {
+            fetch('{{ url_for("main.session_timeout") }}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.expired) {
+                        clearInterval(sessionCheckInterval);
+                        showToast('Session expirée. Redirection...', 'warning');
+                        setTimeout(() => {
+                            window.location.href = '{{ url_for("main.master_password") }}';
+                        }, 2000);
+                    }
+                })
+                .catch(error => console.error('Erreur vérification session:', error));
+        }
+
+        // Fonctions utilitaires
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copié dans le presse-papiers!', 'success');
+            }).catch(err => {
+                showToast('Erreur lors de la copie', 'error');
+            });
+        }
+
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success'} border-0" role="alert" id="${toastId}">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'check-circle'}"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // Nettoyer après disparition
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
+
+        // Afficher une entrée
+        function viewEntry(entryId) {
+            const modal = new bootstrap.Modal(document.getElementById('entryModal'));
+            const modalBody = document.getElementById('entryModalBody');
+            const modalTitle = document.getElementById('entryModalTitle');
+            
+            modalBody.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                </div>
+            `;
+            
+            modal.show();
+            
+            fetch(`{{ url_for('main.view_entry', entry_id=0) }}`.replace('0', entryId))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        modalTitle.textContent = data.title;
+                        modalBody.innerHTML = formatEntryData(data);
+                    } else {
+                        modalBody.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    modalBody.innerHTML = `<div class="alert alert-danger">Erreur lors du chargement</div>`;
+                });
+        }
+
+        // Formater les données d'entrée pour l'affichage
+        function formatEntryData(data) {
+            let html = `<div class="row">`;
+            
+            if (data.type === 'password') {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Nom d'utilisateur</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="${data.data.username || ''}" readonly>
+                            <button class="btn btn-outline-secondary" onclick="copyToClipboard('${data.data.username || ''}')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Mot de passe</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control password-field" value="${data.data.password || ''}" readonly id="passwordField">
+                            <button class="btn btn-outline-secondary" onclick="togglePassword('passwordField')">
+                                <i class="fas fa-eye" id="passwordToggle"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="copyToClipboard('${data.data.password || ''}')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">URL</label>
+                        <div class="input-group">
+                            <input type="url" class="form-control" value="${data.data.url || ''}" readonly>
+                            <button class="btn btn-outline-secondary" onclick="window.open('${data.data.url || ''}', '_blank')">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Contenu</label>
+                        <textarea class="form-control" rows="8" readonly>${data.data.content || ''}</textarea>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Créé le</label>
+                    <input type="text" class="form-control" value="${formatDate(data.created_at)}" readonly>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Modifié le</label>
+                    <input type="text" class="form-control" value="${formatDate(data.updated_at)}" readonly>
+                </div>
+            </div>`;
+            
+            return html;
+        }
+
+        // Basculer l'affichage du mot de passe
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const toggle = document.getElementById('passwordToggle');
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                toggle.className = 'fas fa-eye-slash';
+            } else {
+                field.type = 'password';
+                toggle.className = 'fas fa-eye';
+            }
+        }
+
+        // Formater une date
+        function formatDate(dateString) {
+            if (!dateString) return 'Non disponible';
+            return new Date(dateString).toLocaleString('fr-FR');
+        }
+
+        // Verrouiller le coffre-fort
+        function lockVault() {
+            showConfirmation('Verrouiller le coffre-fort ?', 'Vous devrez ressaisir votre mot de passe maître.', () => {
+                window.location.href = '{{ url_for("main.lock_vault") }}';
+            });
+        }
+
+        // Exporter les données
+        function exportData() {
+            showConfirmation('Exporter vos données ?', 'Cela créera un fichier JSON avec toutes vos données déchiffrées.', () => {
+                fetch('{{ url_for("main.export_data") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `securevault_export_${new Date().toISOString().split('T')[0]}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        showToast('Données exportées avec succès!');
+                    })
+                    .catch(error => {
+                        showToast('Erreur lors de l\'export', 'error');
+                    });
+            });
+        }
+
+        // Afficher une confirmation
+        function showConfirmation(title, message, callback) {
+            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            document.querySelector('#confirmModal .modal-title').textContent = title;
+            document.getElementById('confirmModalBody').textContent = message;
+            
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.onclick = () => {
+                modal.hide();
+                callback();
+            };
+            
+            modal.show();
+        }
+
+        // Afficher/cacher l'indicateur d'activité
+        function showActivity() {
+            document.getElementById('activityIndicator').style.display = 'block';
+        }
+
+        function hideActivity() {
+            document.getElementById('activityIndicator').style.display = 'none';
+        }
+
+        // Dupliquer une entrée
+        function duplicateEntry(entryId) {
+            showConfirmation('Dupliquer cette entrée ?', 'Une copie sera créée avec le même contenu.', () => {
+                showActivity();
+                fetch(`{{ url_for('main.duplicate_entry', entry_id=0) }}`.replace('0', entryId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideActivity();
+                    if (data.success) {
+                        showToast('Entrée dupliquée avec succès!');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showToast(data.error || 'Erreur lors de la duplication', 'error');
+                    }
+                })
+                .catch(error => {
+                    hideActivity();
+                    showToast('Erreur lors de la duplication', 'error');
+                });
+            });
+        }
+
+        // Supprimer une entrée
+        function deleteEntry(entryId) {
+            showConfirmation('Supprimer cette entrée ?', 'Cette action est irréversible.', () => {
+                showActivity();
+                fetch(`{{ url_for('main.delete_entry', entry_id=0) }}`.replace('0', entryId), {
+                    method: 'POST'
+                })
+                .then(() => {
+                    hideActivity();
+                    showToast('Entrée supprimée avec succès!');
+                    setTimeout(() => location.reload(), 1000);
+                })
+                .catch(error => {
+                    hideActivity();
+                    showToast('Erreur lors de la suppression', 'error');
+                });
+            });
+        }
+
+        // Génération de mot de passe
+        function generatePassword(length = 16, symbols = true) {
+            const url = `{{ url_for('main.generate_password_api') }}?length=${length}&symbols=${symbols}`;
+            return fetch(url)
+                .then(response => response.json())
+                .then(data => data.password);
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

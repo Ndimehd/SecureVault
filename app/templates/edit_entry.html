@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier l'entrée - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> Modifier l'entrée : {{ entry.title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control") }}
+                            {% if form.title.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.title.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.entry_type.label(class="form-label") }}
+                            {{ form.entry_type(class="form-select", onchange="toggleEntryType()") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.folder_id.label(class="form-label") }}
+                            {{ form.folder_id(class="form-select") }}
+                        </div>
+
+                        <!-- Champs pour mot de passe -->
+                        <div id="passwordFields" style="display: none;">
+                            <div class="mb-3">
+                                {{ form.username.label(class="form-label") }}
+                                {{ form.username(class="form-control") }}
+                            </div>
+
+                            <div class="mb-3">
+                                {{ form.password.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.password(class="form-control", type="password", id="passwordInput") }}
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info" type="button" onclick="generatePasswordForField()">
+                                        <i class="fas fa-key"></i> Générer
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                {{ form.url.label(class="form-label") }}
+                                {{ form.url(class="form-control", placeholder="https://exemple.com") }}
+                            </div>
+
+                            <!-- Options de génération -->
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Options de génération de mot de passe</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                {{ form.generate_password.label(class="form-check-label") }}
+                                                {{ form.generate_password(class="form-check-input") }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                {{ form.include_symbols.label(class="form-check-label") }}
+                                                {{ form.include_symbols(class="form-check-input") }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        {{ form.password_length.label(class="form-label") }}
+                                        {{ form.password_length(class="form-range", min="8", max="32", value="16", oninput="updateLengthValue(this.value)") }}
+                                        <div class="text-center">
+                                            <span id="lengthDisplay">16</span> caractères
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Champ pour note -->
+                        <div id="noteFields" style="display: none;">
+                            <div class="mb-3">
+                                {{ form.content.label(class="form-label") }}
+                                {{ form.content(class="form-control", rows="6", placeholder="Contenu de votre note...") }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Sauvegarder les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleEntryType() {
+    const entryType = document.getElementById('entry_type').value;
+    const passwordFields = document.getElementById('passwordFields');
+    const noteFields = document.getElementById('noteFields');
+    
+    if (entryType === 'password') {
+        passwordFields.style.display = 'block';
+        noteFields.style.display = 'none';
+    } else {
+        passwordFields.style.display = 'none';
+        noteFields.style.display = 'block';
+    }
+}
+
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('passwordInput');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.className = 'fas fa-eye';
+    }
+}
+
+function generatePasswordForField() {
+    const length = document.getElementById('password_length').value || 16;
+    const symbols = document.getElementById('include_symbols').checked;
+    
+    fetch(`/generate-password-api?length=${length}&symbols=${symbols}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('passwordInput').value = data.password;
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+        });
+}
+
+function updateLengthValue(value) {
+    document.getElementById('lengthDisplay').textContent = value;
+}
+
+// Initialiser l'affichage selon le type d'entrée actuel
+document.addEventListener('DOMContentLoaded', function() {
+    toggleEntryType();
+});
+</script>
+{% endblock %}

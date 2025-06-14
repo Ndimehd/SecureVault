@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle entrée - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Tableau de bord
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('main.add_entry') }}">
+                            <i class="fas fa-plus"></i> Nouvelle entrée
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.add_folder') }}">
+                            <i class="fas fa-folder-plus"></i> Nouveau dossier
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.audit_log') }}">
+                            <i class="fas fa-history"></i> Journal d'audit
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <i class="fas fa-plus text-primary"></i> Nouvelle entrée
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                </div>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-key"></i> Créer une nouvelle entrée sécurisée
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <!-- Type d'entrée -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Type d'entrée</label>
+                                        <div class="btn-group w-100" role="group" aria-label="Type d'entrée">
+                                            <input type="radio" class="btn-check" name="entry_type" id="password_type" value="password" autocomplete="off" checked>
+                                            <label class="btn btn-outline-primary" for="password_type">
+                                                <i class="fas fa-lock"></i> Mot de passe
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="entry_type" id="note_type" value="note" autocomplete="off">
+                                            <label class="btn btn-outline-info" for="note_type">
+                                                <i class="fas fa-sticky-note"></i> Note sécurisée
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Informations générales -->
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <label for="{{ form.title.id }}" class="form-label fw-bold">
+                                            <i class="fas fa-tag"></i> Titre *
+                                        </label>
+                                        {{ form.title(class="form-control", placeholder="Ex: Mon compte Gmail") }}
+                                        {% if form.title.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.title.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="{{ form.folder_id.id }}" class="form-label fw-bold">
+                                            <i class="fas fa-folder"></i> Dossier
+                                        </label>
+                                        {{ form.folder_id(class="form-select") }}
+                                    </div>
+                                </div>
+
+                                <!-- Section mot de passe -->
+                                <div id="password_section">
+                                    <div class="card bg-light mb-4">
+                                        <div class="card-header">
+                                            <h6 class="mb-0 text-primary">
+                                                <i class="fas fa-lock"></i> Informations de connexion
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="{{ form.username.id }}" class="form-label">
+                                                        <i class="fas fa-user"></i> Nom d'utilisateur
+                                                    </label>
+                                                    {{ form.username(class="form-control", placeholder="votre@email.com") }}
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="{{ form.url.id }}" class="form-label">
+                                                        <i class="fas fa-globe"></i> URL
+                                                    </label>
+                                                    {{ form.url(class="form-control", placeholder="https://example.com") }}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="{{ form.password.id }}" class="form-label">
+                                                    <i class="fas fa-key"></i> Mot de passe
+                                                </label>
+                                                <div class="input-group">
+                                                    {{ form.password(class="form-control", id="password_input") }}
+                                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()" id="toggle_password_btn">
+                                                        <i class="fas fa-eye" id="password_eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-primary" type="button" onclick="generatePasswordInline()">
+                                                        <i class="fas fa-magic"></i> Générer
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Options de génération -->
+                                            <div class="card border-primary" id="generate_options" style="display: none;">
+                                                <div class="card-header bg-primary text-white py-2">
+                                                    <small><i class="fas fa-cog"></i> Options de génération</small>
+                                                </div>
+                                                <div class="card-body py-2">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-4">
+                                                            <div class="form-check">
+                                                                {{ form.generate_password(class="form-check-input") }}
+                                                                <label class="form-check-label small" for="{{ form.generate_password.id }}">
+                                                                    Générer automatiquement
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small mb-1">Longueur</label>
+                                                            {{ form.password_length(class="form-range", min="8", max="32", value="16", oninput="updateLengthValue(this.value)") }}
+                                                            <div class="text-center small">
+                                                                <span id="length_value">16</span> caractères
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <div class="form-check">
+                                                                {{ form.include_symbols(class="form-check-input", checked=True) }}
+                                                                <label class="form-check-label small" for="{{ form.include_symbols.id }}">
+                                                                    Symboles spéciaux
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section note -->
+                                <div id="note_section" style="display: none;">
+                                    <div class="card bg-light mb-4">
+                                        <div class="card-header">
+                                            <h6 class="mb-0 text-info">
+                                                <i class="fas fa-sticky-note"></i> Contenu de la note
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <label for="{{ form.content.id }}" class="form-label">
+                                                <i class="fas fa-edit"></i> Contenu *
+                                            </label>
+                                            {{ form.content(class="form-control", rows="8", placeholder="Saisissez le contenu de votre note sécurisée...") }}
+                                            <small class="form-text text-muted">
+                                                Cette note sera chiffrée et stockée de manière sécurisée.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Boutons d'action -->
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-muted small">
+                                        <i class="fas fa-shield-alt text-success"></i>
+                                        Toutes les données seront chiffrées avec votre mot de passe maître
+                                    </div>
+                                    <div>
+                                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary me-2">
+                                            <i class="fas fa-times"></i> Annuler
+                                        </a>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-save"></i> Enregistrer
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion du changement de type d'entrée
+    const passwordRadio = document.getElementById('password_type');
+    const noteRadio = document.getElementById('note_type');
+    const passwordSection = document.getElementById('password_section');
+    const noteSection = document.getElementById('note_section');
+
+    function toggleSections() {
+        if (passwordRadio.checked) {
+            passwordSection.style.display = 'block';
+            noteSection.style.display = 'none';
+        } else {
+            passwordSection.style.display = 'none';
+            noteSection.style.display = 'block';
+        }
+    }
+
+    passwordRadio.addEventListener('change', toggleSections);
+    noteRadio.addEventListener('change', toggleSections);
+    
+    // Initialiser l'affichage
+    toggleSections();
+});
+
+// Basculer la visibilité du mot de passe
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password_input');
+    const eyeIcon = document.getElementById('password_eye');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordInput.type = 'password';
+        eyeIcon.className = 'fas fa-eye';
+    }
+}
+
+// Générer un mot de passe en ligne
+function generatePasswordInline() {
+    const lengthInput = document.querySelector('input[name="password_length"]');
+    const symbolsInput = document.querySelector('input[name="include_symbols"]');
+    const generateOptions = document.getElementById('generate_options');
+    
+    // Afficher les options si elles sont cachées
+    if (generateOptions.style.display === 'none') {
+        generateOptions.style.display = 'block';
+    }
+    
+    const length = lengthInput ? lengthInput.value : 16;
+    const symbols = symbolsInput ? symbolsInput.checked : true;
+    
+    fetch(`/generate-password-api?length=${length}&symbols=${symbols}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('password_input').value = data.password;
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la génération du mot de passe');
+        });
+}
+
+// Mettre à jour la valeur de longueur affichée
+function updateLengthValue(value) {
+    document.getElementById('length_value').textContent = value;
+}
+
+// Auto-générer le mot de passe si l'option est cochée
+document.addEventListener('change', function(e) {
+    if (e.target.name === 'generate_password' && e.target.checked) {
+        generatePasswordInline();
+    }
+});
+</script>
+
+<style>
+.sidebar {
+    min-height: 100vh;
+}
+
+.btn-check:checked + .btn-outline-primary {
+    background-color: #4e73df;
+    border-color: #4e73df;
+    color: white;
+}
+
+.btn-check:checked + .btn-outline-info {
+    background-color: #36b9cc;
+    border-color: #36b9cc;
+    color: white;
+}
+
+.card.bg-light {
+    background-color: #f8f9fc !important;
+}
+
+.border-primary {
+    border-color: #4e73df !important;
+}
+
+.bg-primary {
+    background-color: #4e73df !important;
+}
+
+.form-range {
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: #4e73df;
+    border-color: #4e73df;
+}
+</style>
+{% endblock %}

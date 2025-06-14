@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Recherche - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-search"></i> Recherche
+                    </h6>
+                    <form method="GET" action="{{ url_for('main.search') }}">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" name="q" 
+                                   placeholder="Rechercher..." value="{{ query }}" 
+                                   autocomplete="off">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search"></i> Résultats de recherche
+                        {% if query %}
+                            pour "{{ query }}"
+                        {% endif %}
+                    </h5>
+                    {% if entries %}
+                        <span class="badge bg-primary">{{ entries|length }} résultat(s)</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if query %}
+                        {% if entries %}
+                            <div class="row">
+                                {% for entry in entries %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card entry-card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h6 class="card-title mb-0">
+                                                    {% if entry.entry_type == 'password' %}
+                                                        <i class="fas fa-key text-warning"></i>
+                                                    {% elif entry.entry_type == 'note' %}
+                                                        <i class="fas fa-sticky-note text-info"></i>
+                                                    {% elif entry.entry_type == 'card' %}
+                                                        <i class="fas fa-credit-card text-success"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-file text-secondary"></i>
+                                                    {% endif %}
+                                                    {{ entry.title }}
+                                                </h6>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-link btn-sm" type="button" 
+                                                            data-bs-toggle="dropdown">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" 
+                                                               onclick="viewEntry({{ entry.id }})">
+                                                                <i class="fas fa-eye"></i> Voir
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" 
+                                                               href="{{ url_for('main.edit_entry', entry_id=entry.id) }}">
+                                                                <i class="fas fa-edit"></i> Modifier
+                                                            </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <a class="dropdown-item text-danger" href="#" 
+                                                               onclick="deleteEntry({{ entry.id }}, '{{ entry.title }}')">
+                                                                <i class="fas fa-trash"></i> Supprimer
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    Type: {{ entry.entry_type|title }}
+                                                    {% if entry.folder %}
+                                                        <br>Dossier: {{ entry.folder.name }}
+                                                    {% endif %}
+                                                    <br>Modifié: {{ entry.updated_at.strftime('%d/%m/%Y %H:%M') if entry.updated_at else 'N/A' }}
+                                                </small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-search-minus fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucun résultat trouvé</h5>
+                                <p class="text-muted">
+                                    Aucune entrée ne correspond à votre recherche "{{ query }}".
+                                </p>
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Créer une nouvelle entrée
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Rechercher dans vos entrées</h5>
+                            <p class="text-muted">
+                                Utilisez la barre de recherche ci-dessus pour trouver vos mots de passe, notes et autres entrées.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour visualiser une entrée -->
+<div class="modal fade" id="viewEntryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="entryTitle">Détails de l'entrée</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="entryContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.sidebar {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    min-height: calc(100vh - 120px);
+    border-radius: 15px;
+    margin-right: 1rem;
+}
+
+.entry-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.entry-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--accent-color);
+    color: white;
+    box-shadow: 0 0 0 0.25rem rgba(240, 147, 251, 0.25);
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+</style>
+
+<script>
+function viewEntry(entryId) {
+    const modal = new bootstrap.Modal(document.getElementById('viewEntryModal'));
+    const content = document.getElementById('entryContent');
+    const title = document.getElementById('entryTitle');
+    
+    // Afficher le spinner
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Charger les données de l'entrée
+    fetch(`/view-entry/${entryId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                title.textContent = data.title;
+                
+                let contentHtml = '';
+                if (data.type === 'password') {
+                    contentHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">Nom d'utilisateur:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="${data.data.username || ''}" readonly>
+                                <button class="btn btn-outline-secondary" onclick="copyToClipboard('${data.data.username || ''}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mot de passe:</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" value="${data.data.password || ''}" readonly id="passwordField">
+                                <button class="btn btn-outline-secondary" onclick="togglePassword()">
+                                    <i class="fas fa-eye" id="passwordToggle"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="copyToClipboard('${data.data.password || ''}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        ${data.data.url ? `
+                        <div class="mb-3">
+                            <label class="form-label">URL:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="${data.data.url}" readonly>
+                                <a href="${data.data.url}" target="_blank" class="btn btn-outline-secondary">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${data.data.notes ? `
+                        <div class="mb-3">
+                            <label class="form-label">Notes:</label>
+                            <textarea class="form-control" rows="3" readonly>${data.data.notes}</textarea>
+                        </div>
+                        ` : ''}
+                    `;
+                } else {
+                    contentHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">Contenu:</label>
+                            <textarea class="form-control" rows="5" readonly>${data.data.content || ''}</textarea>
+                        </div>
+                    `;
+                }
+                
+                content.innerHTML = contentHtml;
+            } else {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Erreur lors du chargement de l'entrée: ${data.error}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Erreur de connexion
+                </div>
+            `;
+        });
+}
+
+function togglePassword() {
+    const field = document.getElementById('passwordField');
+    const toggle = document.getElementById('passwordToggle');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        toggle.className = 'fas fa-eye-slash';
+    } else {
+        field.type = 'password';
+        toggle.className = 'fas fa-eye';
+    }
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Afficher une notification de succès
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 2000);
+    });
+}
+
+function deleteEntry(entryId, entryTitle) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer "${entryTitle}" ?`)) {
+        fetch(`/delete-entry/${entryId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(() => {
+            location.reload();
+        });
+    }
+}
+</script>
+{% endblock %}

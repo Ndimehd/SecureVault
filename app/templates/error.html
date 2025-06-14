@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Erreur {{ error_code }} - SecureVault{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700">
+    <div class="max-w-lg w-full mx-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 text-center">
+            <!-- Icône d'erreur -->
+            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-6">
+                {% if error_code == 404 %}
+                    <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                {% elif error_code == 403 %}
+                    <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
+                    </svg>
+                {% else %}
+                    <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.888-.833-2.664 0L3.184 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                {% endif %}
+            </div>
+
+            <!-- Code d'erreur -->
+            <h1 class="text-6xl font-bold text-gray-900 mb-4">{{ error_code }}</h1>
+            
+            <!-- Message d'erreur -->
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">
+                {% if error_code == 404 %}
+                    Page introuvable
+                {% elif error_code == 403 %}
+                    Accès refusé
+                {% elif error_code == 500 %}
+                    Erreur serveur
+                {% else %}
+                    Une erreur s'est produite
+                {% endif %}
+            </h2>
+            
+            <p class="text-gray-600 mb-8">
+                {% if error_code == 404 %}
+                    La page que vous recherchez n'existe pas ou a été déplacée.
+                {% elif error_code == 403 %}
+                    Vous n'avez pas les permissions nécessaires pour accéder à cette ressource.
+                {% elif error_code == 500 %}
+                    Une erreur interne du serveur s'est produite. Veuillez réessayer plus tard.
+                {% else %}
+                    {{ error_message or "Une erreur inattendue s'est produite." }}
+                {% endif %}
+            </p>
+
+            <!-- Actions -->
+            <div class="space-y-4">
+                <button onclick="goBack()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Retour à la page précédente
+                </button>
+                
+                <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.login') }}" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    {% if current_user.is_authenticated %}
+                        Retour au tableau de bord
+                    {% else %}
+                        Aller à la page de connexion
+                    {% endif %}
+                </a>
+            </div>
+
+            <!-- Informations de contact -->
+            <div class="mt-8 pt-8 border-t border-gray-200">
+                <p class="text-sm text-gray-500">
+                    Si le problème persiste, contactez le support technique.
+                </p>
+                <p class="text-xs text-gray-400 mt-2">
+                    Code d'erreur: {{ error_code }} | Timestamp: {{ moment().format('YYYY-MM-DD HH:mm:ss') }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function goBack() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = "{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.login') }}";
+    }
+}
+</script>
+{% endblock %}

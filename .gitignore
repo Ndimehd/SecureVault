@@ -1,0 +1,22 @@
+# Environnements virtuels
+venv/
+__pycache__/
+
+# Fichiers de base de données
+*.db
+instance/
+
+# Fichiers temporaires Python
+*.pyc
+*.pyo
+*.pyd
+
+# Variables d’environnement
+.env
+
+# Cache et logs
+*.log
+*.cache
+
+# VSCode
+.vscode/

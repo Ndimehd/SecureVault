@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau dossier - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-folder-plus"></i> Créer un nouveau dossier
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control", placeholder="Nom du dossier") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.parent_id.label(class="form-label") }}
+                            {{ form.parent_id(class="form-select") }}
+                            <div class="form-text">
+                                Sélectionnez un dossier parent pour organiser vos dossiers en hiérarchie.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Conseil :</strong> Organisez vos entrées en créant des dossiers thématiques 
+                            (ex: "Travail", "Personnel", "Banque", "Réseaux sociaux").
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-folder-plus"></i> Créer le dossier
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Aperçu des dossiers existants -->
+            <div class="card shadow mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-folder"></i> Mes dossiers existants
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if form.parent_id.choices and form.parent_id.choices|length > 1 %}
+                        <div class="row">
+                            {% for choice in form.parent_id.choices %}
+                                {% if choice[0] != 0 %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-folder text-warning me-2"></i>
+                                        <span>{{ choice[1] }}</span>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-folder-open fa-2x mb-2"></i>
+                            <p>Aucun dossier existant. Ce sera votre premier dossier !</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

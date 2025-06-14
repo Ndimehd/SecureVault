@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Profil - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user"></i> Navigation</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Tableau de bord
+                    </a>
+                    <a href="{{ url_for('main.profile') }}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user"></i> Profil
+                    </a>
+                    <a href="{{ url_for('main.security_settings') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shield-alt"></i> Sécurité
+                    </a>
+                    <a href="{{ url_for('main.audit_log') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-history"></i> Journal d'audit
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-user-edit"></i> Mon Profil</h4>
+                </div>
+                <div class="card-body">
+                    <form id="profileForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="email" class="form-label">
+                                        <i class="fas fa-envelope"></i> Adresse Email
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ current_user.email }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <h5><i class="fas fa-key"></i> Changer le mot de passe</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="new_password" name="new_password">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Laissez vide si vous ne voulez pas changer le mot de passe</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="confirm_password" class="form-label">Confirmer le mot de passe</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div id="password-strength" class="mb-3" style="display: none;">
+                                    <label class="form-label">Force du mot de passe :</label>
+                                    <div class="progress">
+                                        <div id="strength-bar" class="progress-bar" role="progressbar" 
+                                             style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <small id="strength-text" class="form-text"></small>
+                                    <div id="strength-feedback" class="form-text"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <h5><i class="fas fa-info-circle"></i> Informations du compte</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Dernière connexion :</strong> 
+                                           {{ current_user.last_login.strftime('%d/%m/%Y à %H:%M') if current_user.last_login else 'Jamais' }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Compte créé le :</strong> 
+                                           {{ current_user.created_at.strftime('%d/%m/%Y à %H:%M') if current_user.created_at else 'Inconnu' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Authentification 2FA :</strong> 
+                                           {% if current_user.is_2fa_enabled %}
+                                               <span class="badge bg-success">Activée</span>
+                                           {% else %}
+                                               <span class="badge bg-warning">Désactivée</span>
+                                           {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Sauvegarder les modifications
+                            </button>
+                            <a href="{{ url_for('main.export_data') }}" class="btn btn-outline-info" id="exportData">
+                                <i class="fas fa-download"></i> Exporter mes données
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer les modifications</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Êtes-vous sûr de vouloir sauvegarder ces modifications ?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmSave">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const profileForm = document.getElementById('profileForm');
+    const newPasswordInput = document.getElementById('new_password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const togglePasswordBtn = document.getElementById('togglePassword');
+    const strengthDiv = document.getElementById('password-strength');
+    const strengthBar = document.getElementById('strength-bar');
+    const strengthText = document.getElementById('strength-text');
+    const strengthFeedback = document.getElementById('strength-feedback');
+
+    // Toggle password visibility
+    togglePasswordBtn.addEventListener('click', function() {
+        const type = newPasswordInput.type === 'password' ? 'text' : 'password';
+        newPasswordInput.type = type;
+        confirmPasswordInput.type = type;
+        this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+    });
+
+    // Password strength checker
+    newPasswordInput.addEventListener('input', function() {
+        const password = this.value;
+        if (password.length > 0) {
+            strengthDiv.style.display = 'block';
+            checkPasswordStrength(password);
+        } else {
+            strengthDiv.style.display = 'none';
+        }
+    });
+
+    function checkPasswordStrength(password) {
+        fetch(`{{ url_for('main.check_password_strength') }}?password=${encodeURIComponent(password)}`)
+            .then(response => response.json())
+            .then(data => {
+                const percentage = (data.score / 6) * 100;
+                strengthBar.style.width = percentage + '%';
+                strengthBar.className = `progress-bar bg-${data.color === 'red' ? 'danger' : 
+                                                       data.color === 'orange' ? 'warning' : 
+                                                       data.color === 'green' ? 'success' : 'success'}`;
+                strengthText.textContent = data.strength;
+                strengthFeedback.innerHTML = data.feedback.map(f => `• ${f}`).join('<br>');
+            });
+    }
+
+    // Form submission
+    profileForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {};
+        
+        // Validate passwords if provided
+        if (newPasswordInput.value) {
+            if (newPasswordInput.value !== confirmPasswordInput.value) {
+                showAlert('Les mots de passe ne correspondent pas', 'danger');
+                return;
+            }
+            if (newPasswordInput.value.length < 8) {
+                showAlert('Le mot de passe doit contenir au moins 8 caractères', 'danger');
+                return;
+            }
+            data.password = newPasswordInput.value;
+        }
+        
+        data.email = document.getElementById('email').value;
+        
+        // Show confirmation modal
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        confirmModal.show();
+        
+        document.getElementById('confirmSave').onclick = function() {
+            confirmModal.hide();
+            saveProfile(data);
+        };
+    });
+
+    function saveProfile(data) {
+        fetch('{{ url_for("main.profile") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Profil mis à jour avec succès', 'success');
+                // Reset password fields
+                newPasswordInput.value = '';
+                confirmPasswordInput.value = '';
+                strengthDiv.style.display = 'none';
+            } else {
+                showAlert(data.error || 'Erreur lors de la mise à jour', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Erreur de connexion', 'danger');
+        });
+    }
+
+    // Export data
+    document.getElementById('exportData').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        fetch('{{ url_for("main.export_data") }}')
+            .then(response => response.json())
+            .then(data => {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `securevault_export_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showAlert('Données exportées avec succès', 'success');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Erreur lors de l\'export', 'danger');
+            });
+    });
+
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.container-fluid');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

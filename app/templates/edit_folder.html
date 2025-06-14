@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier le dossier - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Modifier le dossier
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                            {% if form.name.errors %}
+                                {% for error in form.name.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.parent_id.label(class="form-label") }}
+                            {{ form.parent_id(class="form-select" + (" is-invalid" if form.parent_id.errors else "")) }}
+                            {% if form.parent_id.errors %}
+                                {% for error in form.parent_id.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Sélectionnez un dossier parent ou laissez vide pour créer un dossier racine
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <strong>Conseil :</strong> Organisez vos mots de passe par catégories (Travail, Personnel, Finance, etc.) 
+                            pour les retrouver plus facilement.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                Annuler
+                            </a>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                Sauvegarder
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Informations sur le dossier -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Informations du dossier
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-4"><strong>Nom actuel :</strong></div>
+                        <div class="col-sm-8">{{ folder.name }}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Créé le :</strong></div>
+                        <div class="col-sm-8">
+                            {% if folder.created_at %}
+                                {{ folder.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                            {% else %}
+                                Non disponible
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Modifié le :</strong></div>
+                        <div class="col-sm-8">
+                            {% if folder.updated_at %}
+                                {{ folder.updated_at.strftime('%d/%m/%Y à %H:%M') }}
+                            {% else %}
+                                Jamais modifié
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Parent actuel :</strong></div>
+                        <div class="col-sm-8">
+                            {% if folder.parent %}
+                                <i class="fas fa-folder me-1"></i>
+                                {{ folder.parent.name }}
+                            {% else %}
+                                <i class="fas fa-home me-1"></i>
+                                Dossier racine
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions dangereuses -->
+            <div class="card mt-3 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Zone dangereuse
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        La suppression d'un dossier est irréversible. Assurez-vous qu'il est vide avant de le supprimer.
+                    </p>
+                    
+                    <form method="POST" action="{{ url_for('main.delete_folder', folder_id=folder.id) }}" 
+                          onsubmit="return confirmDelete();" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fas fa-trash me-2"></i>
+                            Supprimer ce dossier
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete() {
+    return confirm('Êtes-vous sûr de vouloir supprimer ce dossier ? Cette action est irréversible.\n\nLe dossier doit être vide (aucune entrée ni sous-dossier) pour pouvoir être supprimé.');
+}
+
+// Auto-focus sur le champ nom
+document.addEventListener('DOMContentLoaded', function() {
+    const nameField = document.querySelector('input[name="name"]');
+    if (nameField) {
+        nameField.focus();
+        nameField.select(); // Sélectionner le texte existant
+    }
+});
+</script>
+{% endblock %}

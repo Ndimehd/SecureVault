@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Partager l'entrée - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-share-alt"></i> Partager l'entrée : {{ entry.title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Partage sécurisé :</strong> L'utilisateur avec qui vous partagez cette entrée 
+                        devra utiliser son propre mot de passe maître pour la déchiffrer.
+                    </div>
+
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control", placeholder="email@exemple.com") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Entrez l'adresse email de l'utilisateur avec qui partager cette entrée.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.permission.label(class="form-label") }}
+                            {{ form.permission(class="form-select") }}
+                            <div class="form-text">
+                                <strong>Lecture :</strong> L'utilisateur peut seulement voir l'entrée.<br>
+                                <strong>Écriture :</strong> L'utilisateur peut voir et modifier l'entrée.
+                            </div>
+                        </div>
+
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Détails de l'entrée à partager</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Titre :</strong> {{ entry.title }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Type :</strong> 
+                                        <span class="badge bg-{{ 'primary' if entry.entry_type == 'password' else 'info' }}">
+                                            {{ 'Mot de passe' if entry.entry_type == 'password' else 'Note' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <strong>Créé le :</strong> {{ entry.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Modifié le :</strong> {{ entry.updated_at.strftime('%d/%m/%Y à %H:%M') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Attention :</strong> Assurez-vous de faire confiance à la personne avec qui 
+                            vous partagez cette entrée. Le partage d'informations sensibles doit être fait avec précaution.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-share-alt"></i> Partager l'entrée
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Partages existants -->
+            <div class="card shadow mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-users"></i> Partages existants pour cette entrée
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if entry.shared_entries %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Utilisateur</th>
+                                        <th>Permission</th>
+                                        <th>Partagé le</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for share in entry.shared_entries %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-user"></i> {{ share.user.email }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'warning' if share.permission == 'write' else 'secondary' }}">
+                                                {{ 'Écriture' if share.permission == 'write' else 'Lecture' }}
+                                            </span>
+                                        </td>
+                                        <td>{{ share.created_at.strftime('%d/%m/%Y') }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="revokeShare({{ share.id }})" 
+                                                    title="Révoquer le partage">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-user-slash fa-2x mb-2"></i>
+                            <p>Cette entrée n'est partagée avec personne pour le moment.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function revokeShare(shareId) {
+    if (confirm('Êtes-vous sûr de vouloir révoquer ce partage ?')) {
+        fetch(`/revoke-share/${shareId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la révocation du partage');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la révocation du partage');
+        });
+    }
+}
+</script>
+{% endblock %}

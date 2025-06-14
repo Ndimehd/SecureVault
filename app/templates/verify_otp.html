@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Mot de passe maître{% endblock %}
+
+{% block content %}
+<div class="container-fluid d-flex align-items-center justify-content-center min-vh-100">
+    <div class="row w-100">
+        <div class="col-md-6 col-lg-4 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="vault-icon mb-3">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1Z" stroke="#6c5ce7" stroke-width="2" fill="#6c5ce7" fill-opacity="0.1"/>
+                                <path d="M9 12L11 14L15 10" stroke="#6c5ce7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-primary">Coffre-fort verrouillé</h3>
+                        <p class="text-muted">Entrez votre mot de passe maître pour déverrouiller vos données</p>
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('main.master_password') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            <label for="master_password" class="form-label">Mot de passe maître</label>
+                            <div class="input-group">
+                                {{ form.master_password(class="form-control form-control-lg", placeholder="••••••••••••") }}
+                                <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                    <i class="fas fa-eye" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                            {% if form.master_password.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.master_password.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-unlock-alt me-2"></i>
+                                Déverrouiller
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Vos données sont chiffrées de bout en bout
+                        </small>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('main.logout') }}" class="btn btn-link btn-sm text-muted">
+                            <i class="fas fa-sign-out-alt me-1"></i>
+                            Se déconnecter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.min-vh-100 {
+    min-height: 100vh;
+}
+
+.vault-icon {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.form-control-lg {
+    border-radius: 10px;
+}
+
+.btn-lg {
+    border-radius: 10px;
+    padding: 12px 20px;
+}
+</style>
+
+<script>
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const passwordField = document.getElementById('master_password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordField.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+    }
+});
+
+// Auto-focus sur le champ mot de passe
+document.getElementById('master_password').focus();
+</script>
+{% endblock %}
