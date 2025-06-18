@@ -1,4 +1,5 @@
 # SecureVault
+<<<<<<< HEAD
 
 SecureVault est une application sécurisée de gestion de notes chiffrées avec :
 
@@ -16,3 +17,6 @@ python -m venv venv
 source .\venv\Scripts\activate 
 pip install -r requirements.txt
 python run.py
+=======
+Coffre-fort numérique sécurisé pour stockage de secrets (projet M1-SSI)
+>>>>>>> 8fe1afbb2367ec9269dbdc02f8b6c60865286fbd
